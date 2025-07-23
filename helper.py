@@ -4,6 +4,8 @@ from qiskit_aer import AerSimulator
 from qiskit.quantum_info import Operator, Statevector
 from qiskit.circuit.library import CCXGate
 
+from typing import Literal
+
 import numpy as np
 import pickle as pk
 
@@ -47,7 +49,7 @@ class grader:
 
         self._answer_list['id'] = (self.name, self.rollno)
         
-        #return self.ans_print()
+        return self.ans_print()
         with open(f"{file_name}_{self.rollno}.dat", 'wb') as fp:
             pk.dump(self._answer_list, fp)
             fp.close()
@@ -65,11 +67,14 @@ class grader:
     def circuit_store_qasm(self, qc_answer: QuantumCircuit):
         return qasm2.dumps(qc_answer)
 
-    def circuit_compare_commonInitialState(self, qc_answer: QuantumCircuit, Qc_circuit: QuantumCircuit, method= "SV"):
-        initial_state = Statevector.from_label(get_random_initial_states(Qc_circuit.num_qubits))
+    def circuit_compare_commonInitialState(self, qc_answer: QuantumCircuit, Qc_circuit: QuantumCircuit, method: Literal["SV", "InvC"]= "SV", initial_state: str= None):
+        if(initial_state):
+            initial_state = Statevector.from_label(initial_state)
+        else:
+            initial_state = Statevector.from_label(get_random_initial_states(Qc_circuit.num_qubits))
         answer1 = initial_state.evolve(qc_answer)
         answer2 = initial_state.evolve(Qc_circuit)
-        
+
         if(method == "InvC"):
             pass
         # default StateVector check
@@ -118,7 +123,7 @@ class QCC1(grader):
         Qc_circuit.cx(0, 1)
         Qc_circuit.cx(0, 2)
 
-        self.circuit_compare_commonInitialState(qc_answer, Qc_circuit)
+        self.circuit_compare_commonInitialState(qc_answer, Qc_circuit, initial_state= '0' * Qc_circuit.num_qubits)
         self.check_task(self.circuit_store_qasm(qc_answer), 'Ex3')
 
     def Ex4(self, qc_answer: QuantumCircuit):
@@ -161,4 +166,5 @@ class QCC1(grader):
         self.check_task('yes','bonus')
 
 if __name__ == "__main__":
-    print(get_random_initial_states(4))
+    pass
+    #print(get_random_initial_states(4))

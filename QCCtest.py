@@ -11,14 +11,16 @@ install pykernel later when prompted from notebook
 import qiskit
 import numpy as np
 import matplotlib.pyplot as plt
-
 from qiskit_aer import AerSimulator
-from qiskit import QuantumCircuit
-from qiskit.visualization import plot_histogram
-from qiskit.visualization import plot_bloch_multivector
 
-from qiskit.quantum_info import Operator
-from qiskit.circuit.library import CCXGate
+# Give us your intro (Needed for Evaluations)
+### your code here ###
+NAME = ""
+ROLLNO = ""
+### ### ### ###
 
-print(qiskit.__version__)
-print(np.__version__)
+
+if __name__ == "__main__":
+    print(NAME, ROLLNO)
+    print(qiskit.__version__)
+    print(np.__version__)
