@@ -14,6 +14,10 @@ def run_transpiled_circuit(qc: QuantumCircuit, kwargs= {}):
     
     return result.get_counts()
 
+def get_random_initial_states(num_qubits= 1):
+    state_bits = np.random.randint(low= 0, high= 2, size= (num_qubits,))
+    return ''.join(map(str, state_bits))
+
 class grader:
     def __init__(self, total):
         self._score = 0
@@ -48,16 +52,34 @@ class grader:
             pk.dump(self._answer_list, fp)
             fp.close()
 
-    def check_task(self, obj, key):
+    def check_task(self, obj, key, add_score= 1):
         if(self._task_flag):
             if(key not in self._answer_list):
-                self._score += 1
+                self._score += add_score
             self._answer_list[key] = obj
             print(f"Good Job {self.name}. You passed.✅")
         else:
           print("Try Again.🔄")    
         print("Your score:", self._score)   
 
+    def circuit_store_qasm(self, qc_answer: QuantumCircuit):
+        return qasm2.dumps(qc_answer)
+
+    def circuit_compare_commonInitialState(self, qc_answer: QuantumCircuit, Qc_circuit: QuantumCircuit, method= "SV"):
+        initial_state = Statevector.from_label(get_random_initial_states(Qc_circuit.num_qubits))
+        answer1 = initial_state.evolve(qc_answer)
+        answer2 = initial_state.evolve(Qc_circuit)
+        
+        if(method == "InvC"):
+            pass
+        # default StateVector check
+        return self.circuit_compare_Statevector(answer1, answer2)
+
+    def circuit_compare_Statevector(self, answer_state1: Statevector, answer_state2: Statevector):
+        self._task_flag = answer_state1.equiv(answer_state2)
+        return self._task_flag
+
+############################################################
 class QCC1(grader):
     def __init__(self):
         super().__init__(total= 6)
@@ -71,13 +93,8 @@ class QCC1(grader):
         Qc_circuit.u(np.pi/2, 0, np.pi, 0)
         Qc_circuit.cx(0, 1)
 
-        initial_state = Statevector.from_label('00')
-        final_answer = initial_state.evolve(qc_answer)
-        answer = initial_state.evolve(Qc_circuit)
-
-        self._task_flag = answer.equiv(final_answer)
-        answer_string = qasm2.dumps(qc_answer)
-        self.check_task(answer_string, 'Ex1')
+        self.circuit_compare_commonInitialState(qc_answer, Qc_circuit)
+        self.check_task(self.circuit_store_qasm(qc_answer), 'Ex1')
 
     def Ex2(self, counts):
         self._task_flag = False
@@ -101,13 +118,8 @@ class QCC1(grader):
         Qc_circuit.cx(0, 1)
         Qc_circuit.cx(0, 2)
 
-        initial_state = Statevector.from_label('000')
-        final_answer = initial_state.evolve(qc_answer)
-        answer = initial_state.evolve(Qc_circuit)
-
-        self._task_flag = answer.equiv(final_answer)
-        answer_string = qasm2.dumps(qc_answer)
-        self.check_task(answer_string, 'Ex3')
+        self.circuit_compare_commonInitialState(qc_answer, Qc_circuit)
+        self.check_task(self.circuit_store_qasm(qc_answer), 'Ex3')
 
     def Ex4(self, qc_answer: QuantumCircuit):
         qc_answer = qc_answer.remove_final_measurements(inplace= False)
@@ -121,21 +133,15 @@ class QCC1(grader):
         answer = initial_state.evolve(Qc_circuit)
 
         self._task_flag = answer.equiv(final_answer)
-        answer_string = qasm2.dumps(qc_answer)
-        self.check_task(answer_string, 'Ex4')
+        self.check_task(self.circuit_store_qasm(qc_answer), 'Ex4')
 
     def Ex5(self, qc_answer: QuantumCircuit):
         Qc_circuit = QuantumCircuit(1)
         Qc_circuit.u(np.pi/2, 0, np.pi, 0)
         Qc_circuit.u(0, 0, np.pi/2, 0)
 
-        initial_state = Statevector.from_label('0')
-        final_answer = initial_state.evolve(qc_answer)
-        answer = initial_state.evolve(Qc_circuit)
-
-        self._task_flag = answer.equiv(final_answer)
-        answer_string = qasm2.dumps(qc_answer)
-        self.check_task(answer_string, 'Ex5')
+        self.circuit_compare_commonInitialState(qc_answer, Qc_circuit)
+        self.check_task(self.circuit_store_qasm(qc_answer), 'Ex5')
 
     def Ex6(self, number: np.ndarray, qc_answer: QuantumCircuit):
         qc_answer = qc_answer.remove_final_measurements(inplace= False)
@@ -145,16 +151,14 @@ class QCC1(grader):
             if(bit): Qc_circuit.u(np.pi, 0, np.pi, idx)
         Qc_circuit.ccx(0,1,2)
 
-        initial_state = Statevector.from_label('000')
-        final_answer = initial_state.evolve(qc_answer)
-        answer = initial_state.evolve(Qc_circuit)
-
-        self._task_flag = answer.equiv(final_answer)
-        answer_string = qasm2.dumps(qc_answer)
-        self.check_task(answer_string, 'Ex6')
+        self.circuit_compare_commonInitialState(qc_answer, Qc_circuit)
+        self.check_task([number.tolist(), self.circuit_store_qasm(qc_answer)], 'Ex6')
 
     def BonusEx(self, ans_matrix: np.ndarray):
         toffoli = CCXGate()
         toffoli_matrix = np.array(Operator(toffoli))
         self._task_flag = np.array_equal(ans_matrix, toffoli_matrix)
         self.check_task('yes','bonus')
+
+if __name__ == "__main__":
+    print(get_random_initial_states(4))
